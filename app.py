@@ -230,6 +230,25 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 # Tab 1 — Match Analysis
 with tab1:
+    # Verdict banner
+    verdict = jd_analysis.get("verdict", "")
+    verdict_reasoning = jd_analysis.get("verdict_reasoning", "")
+
+    verdict_styles = {
+        "Strong Apply":       ("🟢", "#d4edda", "#155724"),
+        "Apply":              ("🔵", "#cce5ff", "#004085"),
+        "Apply with Caution": ("🟡", "#fff3cd", "#856404"),
+        "Do Not Apply":       ("🔴", "#f8d7da", "#721c24"),
+    }
+    icon, bg, fg = verdict_styles.get(verdict, ("⚪", "#e2e3e5", "#383d41"))
+    st.markdown(
+        f'<div style="background:{bg};color:{fg};padding:16px 20px;border-radius:10px;margin-bottom:16px">'
+        f'<span style="font-size:1.3rem;font-weight:700">{icon} Claude\'s Verdict: {verdict}</span>'
+        f'<p style="margin:8px 0 0;font-size:0.95rem">{verdict_reasoning}</p>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
     score = jd_analysis.get("match_score", 0)
     st.markdown(f"## Match Score: {score} / 100")
 

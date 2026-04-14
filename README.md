@@ -10,8 +10,9 @@ Everything is driven by documents you provide — no hardcoded personal data any
 
 1. **Scrapes** a job posting URL (LinkedIn, Indeed, Greenhouse, Lever, Workday, Naukri, generic pages)
 2. **Analyzes** the JD against your profile: match score, matched skills, gap skills, key themes
-3. **Generates** tailored content via Claude: summary, cover letter, outreach messages
-4. **Builds** a formatted Word resume (.docx) and PDF using only the most relevant bullets per role
+3. **Gives a verdict** — Claude tells you whether to apply, with honest reasoning
+4. **Generates** tailored content via Claude: summary, cover letter, outreach messages
+5. **Builds** a formatted Word resume (.docx) and PDF using only the most relevant bullets per role
 
 ---
 
@@ -58,6 +59,21 @@ cp .env.example .env
 | Any `.pdf`, `.docx`, `.txt` | The app reads everything |
 
 All documents are merged into one unified context before generating any output.
+
+---
+
+## Claude's Verdict
+
+After analyzing the JD, Claude returns one of four verdicts displayed as a banner at the top of the Match Analysis tab:
+
+| Verdict | Criteria |
+|---------|----------|
+| 🟢 **Strong Apply** | Match score ≥ 75, no critical gaps |
+| 🔵 **Apply** | Match score 55–74, minor gaps |
+| 🟡 **Apply with Caution** | Match score 35–54, significant but addressable gaps |
+| 🔴 **Do Not Apply** | Match score < 35, or missing hard requirements |
+
+Each verdict includes 2–3 sentences of honest reasoning — real gaps called out, genuine strengths highlighted, and actionable context for your decision.
 
 ---
 

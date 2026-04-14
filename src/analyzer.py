@@ -39,7 +39,14 @@ def analyze_jd(jd: dict, context: dict) -> dict:
         "key_themes (list of 3-5 strings),\n"
         "seniority_level (string),\n"
         "match_score (integer 0-100),\n"
-        "match_breakdown (object with keys: technical_match, experience_match, domain_match — each 0-100).\n"
+        "match_breakdown (object with keys: technical_match, experience_match, domain_match — each 0-100),\n"
+        "verdict (string — one of: 'Strong Apply', 'Apply', 'Apply with Caution', 'Do Not Apply'),\n"
+        "verdict_reasoning (string — 2-3 sentences explaining the verdict honestly; call out real gaps, "
+        "highlight genuine strengths, and give the candidate actionable context for their decision).\n"
+        "Verdict criteria: 'Strong Apply' = match_score >= 75 and no critical gaps; "
+        "'Apply' = match_score 55-74 or minor gaps; "
+        "'Apply with Caution' = match_score 35-54 or significant gaps that can be addressed; "
+        "'Do Not Apply' = match_score < 35 or missing hard requirements (e.g. required degree, clearance, years of experience).\n"
         "Return only valid JSON. No other text."
     )
 
