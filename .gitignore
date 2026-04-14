@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Environment
+.env
+
+# Node
+node_modules/
+package-lock.json
+
+# Outputs
+outputs/
+
+# Temp files
+_resume_tmp.js
+nohup.out
+
+# macOS
+.DS_Store
