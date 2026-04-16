@@ -14,7 +14,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-5"
 OUTPUTS_DIR = Path(__file__).parent.parent / "outputs"
 
 

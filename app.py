@@ -73,7 +73,11 @@ with st.sidebar:
         n_skills = len(context.get("skills") or [])
         st.markdown(f"{n_docs} documents · {n_stories} work stories · {n_skills} skills")
     elif context and context.get("parse_error"):
-        st.warning("⚠️  Context parsed with errors — raw text will be used.")
+        detail = context.get("error_detail", "")
+        if detail:
+            st.error(f"⚠️  {detail}")
+        else:
+            st.warning("⚠️  Context parsed with errors — raw text will be used.")
 
     if st.button("🔄 Reload Context"):
         with st.spinner("Rebuilding context…"):

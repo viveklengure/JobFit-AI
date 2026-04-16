@@ -52,7 +52,7 @@ def analyze_jd(jd: dict, context: dict) -> dict:
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=2048,
             system=system_prompt,
             messages=[{"role": "user", "content": user_content}],

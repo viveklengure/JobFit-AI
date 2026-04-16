@@ -133,21 +133,32 @@ def parse_context_with_claude(combined_text: str) -> dict:
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096,
+            model="claude-sonnet-4-5",
+            max_tokens=8096,
             system=system_prompt,
             messages=[{"role": "user", "content": combined_text}],
         )
         raw = message.content[0].text.strip()
         # Strip markdown fences if present
         if raw.startswith("```"):
-            raw = raw.split("```")[1]
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else raw
             if raw.startswith("json"):
                 raw = raw[4:]
+        raw = raw.strip()
         return json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.error(f"Context JSON parse error: {e} | raw snippet: {raw[:300] if 'raw' in dir() else 'N/A'}")
+        return {"raw_text": combined_text, "parse_error": True, "error_detail": str(e)}
     except Exception as e:
-        logger.error(f"Context parse error: {e}")
-        return {"raw_text": combined_text, "parse_error": True}
+        error_msg = str(e)
+        logger.error(f"Context parse error: {type(e).__name__}: {error_msg}")
+        # Surface billing/auth errors clearly
+        if "credit balance" in error_msg or "billing" in error_msg.lower():
+            return {"raw_text": combined_text, "parse_error": True, "error_detail": "Anthropic API credit balance too low. Go to console.anthropic.com → Plans & Billing to add credits."}
+        if "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
+            return {"raw_text": combined_text, "parse_error": True, "error_detail": "Invalid ANTHROPIC_API_KEY. Check your .env file."}
+        return {"raw_text": combined_text, "parse_error": True, "error_detail": error_msg}
 
 
 def build_context(uploaded_files: list = None) -> dict:
