@@ -1,18 +1,40 @@
 # JobFit AI — Smart Job Application Assistant
 
-Paste a job URL and get 6 tailored outputs in ~60 seconds: a Word resume, a PDF resume, a cover letter, a hiring manager LinkedIn message, a referral blurb, and an ATS gap analysis.
+Two features in one app:
+
+- **Job URL Analyzer** — paste a single job URL, get a match score, tailored resume, cover letter, hiring manager message, and referral blurb in ~60 seconds
+- **Company Matcher** — paste a company's careers page URL, get every open role scraped and scored against your profile in one shot
 
 Everything is driven by documents you provide — no hardcoded personal data anywhere.
 
 ---
 
-## What JobFit AI does
+## Feature A — Job URL Analyzer
 
 1. **Scrapes** a job posting URL (LinkedIn, Indeed, Greenhouse, Lever, Workday, Naukri, generic pages)
 2. **Analyzes** the JD against your profile: match score, matched skills, gap skills, key themes
 3. **Gives a verdict** — Claude tells you whether to apply, with honest reasoning
 4. **Generates** tailored content via Claude: summary, cover letter, outreach messages
 5. **Builds** a formatted Word resume (.docx) and PDF using only the most relevant bullets per role
+
+---
+
+## Feature B — Company Matcher
+
+1. Enter a company name and paste their careers page URL
+2. App auto-detects the ATS (Greenhouse, Lever, Ashby, Workday) and fetches all open roles directly via their public APIs — no scraping, instant
+3. Filters out junior/intern titles; keeps all roles matching your target profile (TPM, PM, Data Engineer, Analytics, etc.)
+4. Claude scores every qualifying role against your resume in one batched call
+5. Returns a ranked table of all roles + detailed cards for every role scoring ≥ 55 (Apply with Caution or better)
+6. Ends with a strategy summary: best role fit, common gap pattern, one tailoring tip
+
+**Supported ATS platforms (direct API — no Apify needed):**
+- Greenhouse (Instacart, Stripe, Anthropic, Databricks, Datadog, Coinbase, and hundreds more)
+- Lever (auto-detected from lever.co URL)
+- Ashby (auto-detected from ashbyhq.com URL)
+- Workday (when the full myworkdayjobs.com URL is provided)
+
+**ATS detection order:** URL pattern first → then tries Greenhouse/Lever/Ashby by company name slug → falls back to Apify for unsupported platforms
 
 ---
 
@@ -25,7 +47,13 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 npm install -g docx             # Required for Word resume generation
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your keys
+```
+
+**Required in `.env`:**
+```
+ANTHROPIC_API_KEY=sk-ant-...
+APIFY_API_KEY=apify_api_...     # Only needed for companies not on Greenhouse/Lever/Ashby
 ```
 
 **Dependencies:**
