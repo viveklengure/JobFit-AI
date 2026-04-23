@@ -38,6 +38,126 @@ Everything is driven by documents you provide — no hardcoded personal data any
 
 ---
 
+## System Architecture
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         JOBFIT AI — END TO END FLOW                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📁 YOUR DOCUMENTS (docs/ folder)
+   resume.pdf · work_stories.txt · about_me.txt · bio.txt
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│  context_builder.py  —  Document Ingestion Layer    │
+│  PyMuPDF / pdfplumber (PDF) · python-docx (DOCX)   │
+│  Merges all files → sends to Claude for parsing     │
+│  Output: structured JSON profile (skills, exp, bio) │
+└─────────────────────────────────────────────────────┘
+         │
+         │  Unified candidate context (cached in st.session_state)
+         │
+         ├──────────────────────────────────────────────────────────┐
+         │                                                          │
+         ▼                                                          ▼
+╔═══════════════════════════╗                   ╔══════════════════════════════╗
+║  FEATURE A · Job Analyzer ║                   ║  FEATURE B · Company Matcher ║
+╚═══════════════════════════╝                   ╚══════════════════════════════╝
+         │                                                          │
+         ▼                                                          ▼
+┌─────────────────────────┐              ┌──────────────────────────────────────┐
+│  scraper.py             │              │  company_matcher.py                  │
+│  Job URL → HTTP GET     │              │  ATS Detection Chain:                │
+│  BeautifulSoup parses   │              │  1. URL pattern (greenhouse.io etc.) │
+│  title, location, JD    │              │  2. Slug guess → try Greenhouse API  │
+└─────────────────────────┘              │  3. Slug guess → try Lever API       │
+         │                               │  4. Slug guess → try Ashby API       │
+         ▼                               │  5. Workday REST API (if WD URL)     │
+┌─────────────────────────┐              │  6. Apify fallback (custom ATS)      │
+│  analyzer.py            │              └──────────────────────────────────────┘
+│  Claude scores JD vs    │                              │
+│  candidate profile      │                              ▼
+│  Returns: score,        │              ┌──────────────────────────────────────┐
+│  verdict, matched /     │              │  Filtering Pipeline                  │
+│  gap skills, themes     │              │  deduplicate_jobs() — (title, loc)   │
+└─────────────────────────┘              │  pre_filter_jobs() — drop intern /   │
+         │                               │    junior titles; keep target roles  │
+         ▼                               │    (TPM, PM, Analytics, Data Eng…)   │
+┌─────────────────────────┐              └──────────────────────────────────────┘
+│  generator.py           │                              │
+│  4 Claude calls:        │                              ▼
+│  · tailored summary     │              ┌──────────────────────────────────────┐
+│  · cover letter         │              │  build_resume_summary()              │
+│  · HM LinkedIn msg      │              │  One Claude call → compact scoring   │
+│  · referral blurb       │              │  profile (title, skills, seniority,  │
+└─────────────────────────┘              │  achievements) — cached in session   │
+         │                               └──────────────────────────────────────┘
+         ▼                                              │
+┌─────────────────────────┐                            ▼
+│  resume_builder.py      │              ┌──────────────────────────────────────┐
+│  Claude selects top 3-5 │              │  claude_score()                      │
+│  bullets per role →     │              │  Single batched Claude call          │
+│  Node.js docx writes    │              │  All roles scored in one request     │
+│  .docx → LibreOffice    │              │  Returns JSON array: score, verdict, │
+│  converts to .pdf       │              │  fit_reasons, gaps, positioning_tip  │
+└─────────────────────────┘              └──────────────────────────────────────┘
+         │                                              │
+         ▼                                             ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  app.py  —  Streamlit UI Layer                                               │
+│                                                                              │
+│  Feature A tabs:                    Feature B output:                        │
+│  · Match Analysis (score, verdict)  · Ranked table (all qualifying roles)   │
+│  · Tailored Resume (download)       · Detail cards (score ≥ 55)             │
+│  · Cover Letter                     · Why I fit · Gaps · Positioning tip    │
+│  · Outreach Messages                · Apply link · Strategy summary         │
+│  · Raw JD                                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+📄 outputs/  —  Generated resumes (.docx + .pdf), served as download buttons
+```
+
+---
+
+## Project Structure
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  jobfit-ai/                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║  ── UI LAYER ──────────────────────────────────────────────────────────────  ║
+║  app.py                  Streamlit entry point; tab routing, session state   ║
+║  run.py                  CLI launcher with menu                              ║
+║                                                                              ║
+║  ── PIPELINE (src/) ───────────────────────────────────────────────────────  ║
+║  src/context_builder.py  Reads docs/ → parses via Claude → unified JSON     ║
+║  src/scraper.py          HTTP + BeautifulSoup job URL scraper                ║
+║  src/analyzer.py         Claude: JD vs profile → score, verdict, skills     ║
+║  src/generator.py        Claude: cover letter, HM message, referral blurb   ║
+║  src/resume_builder.py   Claude selects bullets → Node.js docx → PDF        ║
+║  src/company_matcher.py  ATS detection, bulk scrape, filter, Claude scoring ║
+║                                                                              ║
+║  ── DATA ──────────────────────────────────────────────────────────────────  ║
+║  docs/                   Your career documents (gitignored — personal data)  ║
+║  docs/README.md          Instructions for what files to add                 ║
+║  outputs/                Generated resumes per application (gitignored)      ║
+║                                                                              ║
+║  ── CONFIG ────────────────────────────────────────────────────────────────  ║
+║  .env                    API keys: ANTHROPIC_API_KEY, APIFY_API_KEY          ║
+║  .env.example            Template for .env                                  ║
+║  .gitignore              Excludes .env, docs/*.pdf, docs/*.docx, outputs/   ║
+║  CLAUDE.md               Full project spec and coding conventions           ║
+║  requirements.txt        Python dependencies                                 ║
+║  package.json            Node.js dependency (docx npm package)              ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 ## Setup
 
 ```bash
